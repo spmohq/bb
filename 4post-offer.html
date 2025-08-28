@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Strength-Based Service Prompt Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient-start: #1f2937;
+      --bg-gradient-end: #111827;
+      --card-bg: rgba(31, 41, 55, 0.5); /* Semi-transparent card background */
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #f9fafb;
+      --text-secondary: #d1d5db;
+      --text-heading: #ffffff;
+      --accent-primary: #22d3ee;
+      --accent-hover: #67e8f9;
+      --accent-success: #34d399;
+      --input-bg: #374151;
+      --code-bg: rgba(0, 0, 0, 0.3);
+      --shadow-color: rgba(0, 0, 0, 0.25);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      max-width: 850px;
+      width: 100%;
+      margin: 0 auto;
+      flex-grow: 1;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+    p.subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+    .prompts-container {
+      display: grid;
+      gap: 30px;
+    }
+    .prompt-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px 0 var(--shadow-color);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px); /* For Safari */
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .prompt-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px 0 var(--shadow-color);
+    }
+    .prompt-card h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .prompt-text {
+      background-color: var(--code-bg);
+      padding: 20px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Source Code Pro', "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 1rem;
+      color: var(--text-primary);
+      font-weight: 600;
+      flex-grow: 1;
+      margin-bottom: 20px;
+      border: 1px solid var(--card-border);
+    }
+    .copy-button {
+      align-self: flex-end;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--bg-gradient-end);
+      background-color: var(--accent-primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .copy-button:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.05);
+    }
+    .copy-button.copied {
+      background-color: var(--accent-success);
+    }
+    .copy-button .icon {
+      width: 16px;
+      height: 16px;
+    }
+    .copy-button .copied-icon {
+        display: none;
+    }
+    .copy-button.copied .copy-icon {
+        display: none;
+    }
+    .copy-button.copied .copied-icon {
+        display: inline-block;
+    }
+    .input-group {
+        margin-bottom: 20px;
+    }
+    .input-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    .input-group textarea {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--card-border);
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        min-height: 80px;
+        resize: vertical;
+    }
+    .generate-button {
+      padding: 12px 25px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--bg-gradient-end);
+      background-color: var(--accent-primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      margin-bottom: 30px;
+    }
+    .generate-button:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.02);
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 20px 15px;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .prompt-card h2 {
+        font-size: 1.4rem;
+      }
+      .prompt-text {
+          font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Strength-Based Service Prompt Generator</h1>
+      <p class="subtitle">Enter your strengths to generate a custom service analysis prompt.</p>
+    </header>
+
+    <main>
+      <div class="input-group">
+        <label for="myStrengths">My Offer (Insert Your Offer Here):</label>
+        <textarea id="myStrengths" placeholder="Describe your key strengths here..."></textarea>
+      </div>
+
+      <button class="generate-button" id="generatePromptButton">Generate My Prompt</button>
+
+      <div class="prompts-container" id="promptsContainer">
+        <div class="prompt-card" id="mainPromptCard">
+          <h2>Your Custom Service Prompt</h2>
+          <pre id="analysisPrompt" class="prompt-text">Click "Generate My Prompt" above to see your personalized prompt here.</pre>
+          <button class="copy-button" data-target="analysisPrompt">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="prompt-card">
+          <h2>Follow-up Prompt 1</h2>
+          <pre id="followupPrompt1" class="prompt-text">Now please give me two things:
+
+Write a "Sample Offer Statement" for me.
+
+Give me search strings to search and find people who are ideal for my business on various online platforms.</pre>
+          <button class="copy-button" data-target="followupPrompt1">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="prompt-card">
+          <h2>Follow-up Prompt 2</h2>
+          <pre id="followupPrompt2" class="prompt-text">এই Search Strings গুলোকে আরও refine করে নির্দিষ্ট “Ready-to-Use Outreach Messages” লিখে দাও (যা দিয়ে তাদেরকে সরাসরি কনভার্ট করা যাবে)।</pre>
+          <button class="copy-button" data-target="followupPrompt2">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="prompt-card">
+          <h2>Follow-up Prompt 3</h2>
+          <pre id="followupPrompt3" class="prompt-text">এই Outreach Messages-এর সাথে একটা Complete 3-Step Outreach Funnel বানিয়ে দাও (Free Value → Conversation → Paid Offer) যাতে পুরো প্রক্রিয়াটা অটোপাইলটে চলে যাবে।</pre>
+          <button class="copy-button" data-target="followupPrompt3">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="prompt-card">
+          <h2>Follow-up Prompt 4</h2>
+          <pre id="followupPrompt4" class="prompt-text">Please teach me how to set this "auto-pilot" step-by-step from scratch. I am a novice and not rechnically sound for this. Please guide me in Bengali (India).</pre>
+          <button class="copy-button" data-target="followupPrompt4">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="prompt-card">
+          <h2>Follow-up Prompt 5</h2>
+          <pre id="followupPrompt5" class="prompt-text">আমার জন্য একটা Google Sheet Template বানিয়ে দাও (যেখানে সব Script + Payment Column সাজানো থাকবে), এবং আমি যেন তা শুধু কপি-পেস্ট করে আমার কাজ শুরু করে দিতে পারি।</pre>
+          <button class="copy-button" data-target="followupPrompt5">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="prompt-card">
+          <h2>Follow-up Prompt 6</h2>
+          <pre id="followupPrompt6" class="prompt-text">এটাকে Google Sheet-এ সরাসরি Import করার গাইড-ও লিখে দাও, যাতে এটা ক্লাউডে চলে যায় এবং যেকোনো ডিভাইস থেকে আমি এটাকে ব্যবহার করতে পারি।</pre>
+          <button class="copy-button" data-target="followupPrompt6">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+        
+        <!-- New Prompt Card 1 -->
+        <div class="prompt-card">
+          <h2>Website Layout Design Prompt</h2>
+          <pre id="websiteLayoutPrompt" class="prompt-text">Please design it as a Professional Website Layout (Sections + Design Suggestion) so that a web designer can set it up just by looking at it.</pre>
+          <button class="copy-button" data-target="websiteLayoutPrompt">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+            <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            <span class="button-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <!-- New Prompt Card 2 -->
+        <div class="prompt-card">
+          <h2>Figma Wireframe Prompt</h2>
+          <pre id="figmaWireframePrompt" class="prompt-text">Please make it in Figma Wireframe (Visual Draft) format, so that the designer can directly see it and build the site.</pre>
+          <button class="copy-button" data-target="figmaWireframePrompt">
+            <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+<svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+<span class="button-text">Copy Prompt</span>
+</button>
+</div>
+code
+Code
+<!-- New Prompt Card 3 -->
+    <div class="prompt-card">
+      <h2>Figma Link Template Prompt</h2>
+      <pre id="figmaLinkPrompt" class="prompt-text">Please create a ready-made Figma link template for me directly (so you can just open it and edit it).</pre>
+      <button class="copy-button" data-target="figmaLinkPrompt">
+        <svg class="icon copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+        <svg class="icon copied-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+        <span class="button-text">Copy Prompt</span>
+      </button>
+    </div>
+  </div>
+</main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+const promptsContainer = document.getElementById('promptsContainer');
+const myStrengthsInput = document.getElementById('myStrengths');
+const generatePromptButton = document.getElementById('generatePromptButton');
+const analysisPromptPre = document.getElementById('analysisPrompt');
+
+const basePrompt = `Please read and understand the text given below:
+
+মানুষ কি খুঁজছে?
+মানুষ খুঁজছে তার এগিয়ে চলার পথ। নিজ নিজ ক্ষেত্রে নির্বিঘ্নে সামনের পাণে এগিয়ে যেতে।
+যেখানে সে চলার পথে এগুনোর দিশার খেই হারিয়ে বসছে – সেখানেই সে পথের সন্ধান খুঁজতে বসে যাচ্ছে।
+বাধ্য হয়ে।
+হাতের কাজ ফেলে, ব্রতকে পাশে সরিয়ে, বিব্রত হয়ে।
+এতে তার অনেক অনেক ক্ষতি হয়ে যায়। প্রধান কাজকে ফেলে রেখে তাকে সময়, পরিশ্রম ও অর্থ অন্যখাতে ব্যয় করতে হয়।
+আয় বন্ধ, খরচ বেশি – জীবনের সুস্থ অবস্থা নয়।
+সংশয়, প্রশ্ন ও সমস্যা – এই তিন মানুষকে বিব্রত করে।
+এটা জীবনের ধর্ম।
+সেবায় নিজেকে নিয়োগ করাও তাই মানুষের কর্তব্য।
+একটা জিনিস ভেবে দেখুন – আপনার রোগ হয়েছে – ডাক্তারের কাছে গেলেন – ডাক্তারের ট্রিটমেন্টে আপনার রোগ সারুক বা না সারুক – ডাক্তার ফিজ তার পাবেনই।
+ডাক্তার নিজেকে মানুষের সেবাতে নিয়োজিত করেছেন।
+ডাক্তারের ট্রিটমেন্টে রোগ যদি আপনার সারে – আপনি ফিরে ফিরে তার কাছে যাবেন। আপনার পরিচিতদেরকেই তারই কাছে পাঠাবেন।
+ফিজ একবার পাওয়া আর ফিজ একজনের কাছে বারবার পাওয়া ও আরও অনেক অনেককে সেবা দিতে পাওয়ার সুযোগ পাওয়াটা নির্ভর করে ডাক্তারের ট্রিটমেন্টের সাফল্যের উপরে।
+মানবজীবনের এই অমোঘ সত্য ও ডাক্তারের উদাহরণ – এ দুয়ে মিলে, কোন ম্যসেজ আমাদের কনভে করে?
+পয়সা বা আয় বাই-প্রোডাক্ট…
+সেবা দেওয়াটাই মূল।
+জীবিকায় কেউ পয়সাকে নিজের মোটিভেসন করে, কেউ সেবা দেওয়াটাকে –
+যে পয়সাকে মোটিভেসন করে – সে পয়সার পিছনে ছুটে আয় করে (কতটা সে সফল হয় সেটা অন্য প্রসঙ্গ)।
+আর যে সেবা দেওয়া ও সেবার মান-উন্নয়নকে নিজের মোটিভেসন করে – আয় ও পসার তার হয়ই – কিন্তু দুটোই সে পায় তার কাজের বাই-প্রোডাক্ট হিসেবে।
+এ জগতে লোক সংখ্যা যত বাড়বে – সংশয়, প্রশ্ন ও সমস্যা তত বাড়বে – আর তারই সঙ্গে তালে তাল মিলিয়ে সেবা দেওয়ার সুযোগও বাড়বে।
+বাড়ছেও…
+তবু তাহলে কেন এত বেকার সমস্যা?
+এর একমাত্র কারণ, জীবিকার প্রতি বর্তমান মানুষের দৃষ্টিভঙ্গীটা।
+সেবাকে মোটিভেসন না করে পয়সার পিছনে ছুটতে ছুটতে মানুষ নিজেই নিজেকে ক্লান্ত ও বিধ্বস্ত করছে, আর তাতেও যখন সে সফল হতে না-পারছে, সে অনৈতিক পথে নিজেকে নিজেই ঠেলে দিচ্ছে – পেটের বা ফ্যাশানের দায় দিয়ে।
+এটাই মানুষের সব থেকে বড় ভুল।
+নিজেকে কেটেছিঁড়ে বিশ্লেষণ করে দেখুন।
+নিজের শক্তিটাকে খুঁজে বের করুন।
+সেই শক্তি দিয়ে সমাজের মানুষের যে সব সমস্যার সমাধান আপনি করতে পারেন তার লিস্ট বানান।
+নিজের শক্তি দিয়ে সেই সব সমস্যাগুলোর সমাধান দেওয়া শুরু করুন ও যে সব লোক সেই সমস্যায় জর্জরিত তাদেরকে খুঁজে বের করে তাদেরকে অবগত করুন যে তাদের সমস্যার সমাধান রয়েছে আপনার কাছে।
+কাজ ভিক্ষে চাওয়ার নয়। কাজ দিয়ে কেউ আপনাকে দয়া করছেন না।
+আপনি ডাক্তার সে রোগী – আপনি তাকে বাঁচান।
+দেখি কোন বিধাতা আপনাকে তারপরে দারিদ্র্য ও দুর্ভোগে রাখার সাহস করে।
+
+My offer is:
+
+"[Insert Your Offer Here]"
+
+Which problems faced by individuals and businesses can I solve using my expertise in order to earn revenue through service offerings?
+
+Who are they?
+
+How can I find them online?
+
+How should I offer it to them?`;
+
+generatePromptButton.addEventListener('click', () => {
+const strengths = myStrengthsInput.value.trim();
+// Corrected placeholder replacement
+const generatedPrompt = basePrompt.replace('[Insert Your Offer Here]', strengths || 'e.g. আমি AI প্রম্পট লিখতে পারি');
+analysisPromptPre.textContent = generatedPrompt;
+});
+
+// Event delegation for the copy button
+promptsContainer.addEventListener('click', (event) => {
+const button = event.target.closest('.copy-button');
+if (!button) return;
+
+const targetId = button.dataset.target;
+const textToCopy = document.getElementById(targetId).textContent;
+const buttonTextEl = button.querySelector('.button-text');
+
+navigator.clipboard.writeText(textToCopy).then(() => {
+const originalText = buttonTextEl.textContent;
+buttonTextEl.textContent = 'Copied!';
+button.classList.add('copied');
+
+setTimeout(() => {
+buttonTextEl.textContent = originalText;
+button.classList.remove('copied');
+}, 2000);
+}).catch(err => {
+console.error('Failed to copy text: ', err);
+alert('Failed to copy text. Please try again.');
+});
+});
+});
+</script>
+
+<div style="padding-top: 30px;"> </div>
+    <footer class="footer">
+        <center><p>Copyright &copy; <script>document.write(new Date().getFullYear())</script> Siva Prasad Mukherjee. All Rights Reserved.</p></center>
+    </footer>
+</body>
+</html>
